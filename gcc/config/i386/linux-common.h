@@ -126,3 +126,20 @@ extern void file_end_indicate_exec_stack_and_cet (void);
 
 #undef TARGET_ASM_FILE_END
 #define TARGET_ASM_FILE_END file_end_indicate_exec_stack_and_cet
+
+#if !defined USED_FOR_TARGET && !defined GENERATOR_FILE
+#include "input.h"
+
+extern void ix86_check_ucontext_function_reference (location_t, tree);
+
+#undef  ASM_OUTPUT_EXTERNAL
+#define ASM_OUTPUT_EXTERNAL(FILE, DECL, NAME)			\
+  do								\
+    {								\
+      if (TREE_CODE (DECL) == FUNCTION_DECL)			\
+	ix86_check_ucontext_function_reference (UNKNOWN_LOCATION,\
+						DECL);	\
+      default_elf_asm_output_external (FILE, DECL, NAME);	\
+    }								\
+  while (0)
+#endif

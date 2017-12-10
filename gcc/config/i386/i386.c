@@ -2679,6 +2679,39 @@ rest_of_insert_endbranch (void)
   return 0;
 }
 
+/* Check if FNDECL is a ucontext function.  */
+
+void
+ix86_check_ucontext_function_reference (location_t loc,
+					tree fndecl)
+{
+  if (!ix86_check_ucontext_functions
+      || !TARGET_SHSTK
+      || !DECL_FILE_SCOPE_P (fndecl)
+      || !TREE_PUBLIC (fndecl))
+    return;
+
+  /* For instrumentation clones, we want to derive flags from the
+     original name.  */
+  cgraph_node *node = cgraph_node::get (fndecl);
+  if (node && node->instrumentation_clone)
+    fndecl = node->orig_decl;
+
+  tree name_decl = DECL_NAME (fndecl);
+  if (name_decl
+      && (IDENTIFIER_LENGTH (name_decl) == 10
+	  || IDENTIFIER_LENGTH (name_decl) == 11))
+    {
+      const char *name = IDENTIFIER_POINTER (name_decl);
+
+      if (! strcmp (name, "getcontext")
+	  || ! strcmp (name, "setcontext")
+	  || ! strcmp (name, "makecontext")
+	  || ! strcmp (name, "swapcontext"))
+	error_at (loc, "%qE cannot be used with -mshstk", fndecl);
+    }
+}
+
 namespace {
 
 const pass_data pass_data_insert_endbranch =
@@ -18117,10 +18150,18 @@ ix86_print_operand (FILE *file, rtx x, int code)
 	}
       if (CONST_INT_P (x))
 	fprintf (file, HOST_WIDE_INT_PRINT_DEC, INTVAL (x));
-      else if (flag_pic || MACHOPIC_INDIRECT)
-	output_pic_addr_const (file, x, code);
       else
-	output_addr_const (file, x);
+	{
+	  if (GET_CODE (x) == SYMBOL_REF
+	      && SYMBOL_REF_DECL (x)
+	      && TREE_CODE (SYMBOL_REF_DECL (x)) == FUNCTION_DECL)
+	    ix86_check_ucontext_function_reference (input_location,
+						    SYMBOL_REF_DECL (x));
+	  if (flag_pic || MACHOPIC_INDIRECT)
+	    output_pic_addr_const (file, x, code);
+	  else
+	    output_addr_const (file, x);
+	}
     }
 }
 
