@@ -561,14 +561,22 @@ make_blocks_1 (gimple_seq seq, basic_block bb)
 {
   gimple_stmt_iterator i = gsi_start (seq);
   gimple *stmt = NULL;
+  gimple *prev_stmt = NULL;
   bool start_new_block = true;
   bool first_stmt_of_seq = true;
 
   while (!gsi_end_p (i))
     {
-      gimple *prev_stmt;
-
-      prev_stmt = stmt;
+      /* PREV_STMT should only be set to a debug stmt if the debug
+	 stmt is before nondebug stmts.  Once stmt reaches a nondebug
+	 nonlabel, prev_stmt will be set to it, so that
+	 stmt_starts_bb_p will know to start a new block if a label is
+	 found.  However, if stmt was a label after debug stmts only,
+	 keep the label in prev_stmt even if we find further debug
+	 stmts, for there may be other labels after them, and they
+	 should land in the same block.  */
+      if (!prev_stmt || !stmt || !is_gimple_debug (stmt))
+	prev_stmt = stmt;
       stmt = gsi_stmt (i);
 
       if (stmt && is_gimple_call (stmt))
@@ -583,6 +591,7 @@ make_blocks_1 (gimple_seq seq, basic_block bb)
 	    gsi_split_seq_before (&i, &seq);
 	  bb = create_basic_block (seq, bb);
 	  start_new_block = false;
+	  prev_stmt = NULL;
 	}
 
       /* Now add STMT to BB and create the subgraphs for special statement
@@ -2701,6 +2710,13 @@ static inline bool
 stmt_starts_bb_p (gimple *stmt, gimple *prev_stmt)
 {
   if (stmt == NULL)
+    return false;
+
+  /* PREV_STMT is only set to a debug stmt if the debug stmt is before
+     any nondebug stmts in the block.  We don't want to start another
+     block in this case: the debug stmt will already have started the
+     one STMT would start if we weren't outputting debug stmts.  */
+  if (prev_stmt && is_gimple_debug (prev_stmt))
     return false;
 
   /* Labels start a new basic block only if the preceding statement
