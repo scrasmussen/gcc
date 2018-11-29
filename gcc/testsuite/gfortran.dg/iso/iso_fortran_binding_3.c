@@ -10,5 +10,5 @@ test (CFI_cdesc_t *dv)
   float *address;
   subscripts[0] = 4;
   subscripts[1] = 9;
-  address = (float *) CFI_address(dv, subscripts);
+  address = (float *) CFI_address (dv, subscripts);
 }

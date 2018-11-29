@@ -8,5 +8,5 @@ main ()
 {
   CFI_CDESC_T(5) object;
   int ind;
-  ind = CFI_deallocate((CFI_cdesc_t *)&object);
+  ind = CFI_deallocate ((CFI_cdesc_t *)&object);
 }

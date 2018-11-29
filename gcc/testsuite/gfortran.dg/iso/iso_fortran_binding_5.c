@@ -7,5 +7,5 @@ void
 test (CFI_cdesc_t *dv)
 {
   int ind;
-  ind = CFI_deallocate(dv);
+  ind = CFI_deallocate (dv);
 }

@@ -10,5 +10,5 @@ test (CFI_cdesc_t *dv)
   int ind;
   lower[0] = 1; lower[1] = 1;
   upper[0] = 100; upper[1] = 500;
-  ind = CFI_allocate(dv, lower, upper, 0);
+  ind = CFI_allocate (dv, lower, upper, 0);
 }
